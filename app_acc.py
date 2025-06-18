@@ -46,6 +46,30 @@ fps = 24
 context_frames = 12
 context_overlap = 3
 
+def load_local_vae(path):
+    """
+    Load VAE model from local directory with fallback and error handling
+    """
+    try:
+        # Try loading from local directory
+        vae = AutoencoderKL.from_pretrained(
+            path, 
+            local_files_only=True
+        )
+        print(f"Successfully loaded VAE from {path}")
+        return vae
+    except Exception as e:
+        print(f"Error loading local VAE: {e}")
+        
+        # Fallback to Hugging Face model download
+        try:
+            vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
+            print("Loaded VAE from Hugging Face")
+            return vae
+        except Exception as download_error:
+            print(f"Failed to download VAE model: {download_error}")
+            raise RuntimeError("Could not load VAE model. Please check your internet connection and model files.")
+
 def generate(image_input, 
             audio_input, 
             pose_input, 
@@ -69,7 +93,7 @@ def generate(image_input,
 
     ############# model_init started #############
     ## vae init
-    vae = AutoencoderKL.from_pretrained("./pretrained_weights/sd-vae-ft-mse").to(device, dtype=dtype)
+    vae = load_local_vae("./pretrained_weights/sd-vae-ft-mse").to(device, dtype=dtype)
     if quantization_input:
         quantize_(vae, int8_weight_only())
         print("int8量化")
