@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 import numpy as np
 import torch
-from diffusers import AutoencoderKL, DDIMScheduler
+from diffusers import AutoencoderKL, DDIMScheduler, UNet2DConditionModel
 from PIL import Image
 from src.models.unet_2d_condition import UNet2DConditionModel
 from src.models.unet_3d_emo import EMOUNet3DConditionModel
@@ -13,6 +13,7 @@ from src.utils.util import save_videos_grid
 from src.models.pose_encoder import PoseEncoder
 from src.utils.dwpose_util import draw_pose_select_v2
 from moviepy.editor import VideoFileClip, AudioFileClip
+from huggingface_hub import hf_hub_download
 
 import gradio as gr
 from datetime import datetime
@@ -46,29 +47,65 @@ fps = 24
 context_frames = 12
 context_overlap = 3
 
-def load_local_vae(path):
+def download_model_files(repo_id, filename, local_dir):
     """
-    Load VAE model from local directory with fallback and error handling
+    Download specific model files if they don't exist locally
+    """
+    os.makedirs(local_dir, exist_ok=True)
+    local_path = os.path.join(local_dir, filename)
+    
+    if not os.path.exists(local_path):
+        try:
+            downloaded_path = hf_hub_download(
+                repo_id=repo_id, 
+                filename=filename, 
+                local_dir=local_dir,
+                local_dir_use_symlinks=False
+            )
+            print(f"Downloaded {filename} to {local_path}")
+        except Exception as e:
+            print(f"Failed to download {filename}: {e}")
+            return None
+    
+    return local_path
+
+def load_local_model(model_class, local_path, repo_id=None, subfolder=None, **kwargs):
+    """
+    Robust local model loading with fallback to download
     """
     try:
         # Try loading from local directory
-        vae = AutoencoderKL.from_pretrained(
-            path, 
-            local_files_only=True
+        model = model_class.from_pretrained(
+            local_path, 
+            local_files_only=True,
+            subfolder=subfolder,
+            **kwargs
         )
-        print(f"Successfully loaded VAE from {path}")
-        return vae
-    except Exception as e:
-        print(f"Error loading local VAE: {e}")
+        print(f"Successfully loaded model from {local_path}")
+        return model
+    except Exception as local_load_error:
+        print(f"Error loading local model: {local_load_error}")
         
-        # Fallback to Hugging Face model download
-        try:
-            vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse")
-            print("Loaded VAE from Hugging Face")
-            return vae
-        except Exception as download_error:
-            print(f"Failed to download VAE model: {download_error}")
-            raise RuntimeError("Could not load VAE model. Please check your internet connection and model files.")
+        # If repo_id is provided, attempt to download
+        if repo_id:
+            try:
+                # Download config and model files
+                config_file = download_model_files(repo_id, "config.json", local_path)
+                model_file = download_model_files(repo_id, "diffusion_pytorch_model.bin", local_path)
+                
+                if config_file and model_file:
+                    model = model_class.from_pretrained(
+                        local_path, 
+                        subfolder=subfolder,
+                        **kwargs
+                    )
+                    print(f"Successfully downloaded and loaded model from {repo_id}")
+                    return model
+            except Exception as download_error:
+                print(f"Failed to download model: {download_error}")
+        
+        # Final fallback
+        raise RuntimeError(f"Could not load model from {local_path}. Please check your files and internet connection.")
 
 def generate(image_input, 
             audio_input, 
@@ -93,13 +130,23 @@ def generate(image_input,
 
     ############# model_init started #############
     ## vae init
-    vae = load_local_vae("./pretrained_weights/sd-vae-ft-mse").to(device, dtype=dtype)
+    vae = load_local_model(
+        AutoencoderKL, 
+        "./pretrained_weights/sd-vae-ft-mse", 
+        repo_id="stabilityai/sd-vae-ft-mse"
+    ).to(device, dtype=dtype)
     if quantization_input:
         quantize_(vae, int8_weight_only())
         print("int8量化")
 
     ## reference net init
-    reference_unet = UNet2DConditionModel.from_pretrained("./pretrained_weights/sd-image-variations-diffusers", subfolder="unet", use_safetensors=False).to(dtype=dtype, device=device)
+    reference_unet = load_local_model(
+        UNet2DConditionModel, 
+        "./pretrained_weights/sd-image-variations-diffusers", 
+        repo_id="lambdalabs/sd-image-variations-diffusers", 
+        subfolder="unet",
+        use_safetensors=False
+    ).to(dtype=dtype, device=device)
     reference_unet.load_state_dict(torch.load("./pretrained_weights/reference_unet.pth", weights_only=True))
     if quantization_input:
         quantize_(reference_unet, int8_weight_only())
