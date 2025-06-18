@@ -274,7 +274,22 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     generate_button.click(
         generate,
-        inputs=[image_input, audio_input, pose_input, width, height, length, steps, sample_rate, cfg, fps, context_frames, context_overlap, quantization_input, seed],
+        inputs=[
+            image_input, 
+            audio_input, 
+            pose_input, 
+            gr.Number(value=width, label="Width"), 
+            gr.Number(value=height, label="Height"), 
+            length, 
+            steps, 
+            gr.Number(value=sample_rate, label="Sample Rate"), 
+            gr.Number(value=cfg, label="CFG"), 
+            gr.Number(value=fps, label="FPS"), 
+            gr.Number(value=context_frames, label="Context Frames"), 
+            gr.Number(value=context_overlap, label="Context Overlap"), 
+            quantization_input, 
+            seed
+        ],
         outputs=[video_output, seed_text],
     )
 
