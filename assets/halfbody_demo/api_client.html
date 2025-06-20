@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>EchoMimicV2 API Client</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2em;
+      }
+      label {
+        display: block;
+        margin-top: 1em;
+      }
+      input,
+      button {
+        margin-top: 0.5em;
+      }
+      video {
+        margin-top: 1em;
+        max-width: 480px;
+        display: block;
+      }
+      ul {
+        margin-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Generate Lip Sync Video (API Client)</h2>
+    <form id="genForm">
+      <label>Image: <input type="file" name="image_input" required /></label>
+      <label>Audio: <input type="file" name="audio_input" required /></label>
+      <label
+        >Pose Dir (server path):
+        <input
+          type="text"
+          name="pose_input"
+          value="assets/halfbody_demo/pose/fight"
+      /></label>
+      <label>Width: <input type="number" name="width" value="768" /></label>
+      <label>Height: <input type="number" name="height" value="768" /></label>
+      <label>Length: <input type="number" name="length" value="120" /></label>
+      <label>Steps: <input type="number" name="steps" value="30" /></label>
+      <label
+        >Sample Rate: <input type="number" name="sample_rate" value="16000"
+      /></label>
+      <label
+        >CFG: <input type="number" step="0.1" name="cfg" value="2.5"
+      /></label>
+      <label>FPS: <input type="number" name="fps" value="24" /></label>
+      <label
+        >Context Frames: <input type="number" name="context_frames" value="12"
+      /></label>
+      <label
+        >Context Overlap: <input type="number" name="context_overlap" value="3"
+      /></label>
+      <label
+        >Quantization: <input type="checkbox" name="quantization_input"
+      /></label>
+      <label>Seed: <input type="number" name="seed" value="-1" /></label>
+      <button type="submit">Generate</button>
+    </form>
+    <div id="result"></div>
+    <h3>All Generated Videos</h3>
+    <button onclick="listFiles()">Refresh List</button>
+    <ul id="fileList"></ul>
+    <script>
+      const API_BASE = window.location.origin.replace(":7860", ":8000");
+      document.getElementById("genForm").onsubmit = async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        document.getElementById("result").innerHTML = "Generating...";
+        try {
+          const response = await fetch(`${API_BASE}/generate`, {
+            method: "POST",
+            body: data,
+          });
+          if (!response.ok) {
+            const err = await response.json();
+            document.getElementById(
+              "result"
+            ).innerHTML = `<span style='color:red'>Error: ${err.error}</span>`;
+            return;
+          }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          document.getElementById(
+            "result"
+          ).innerHTML = `<video src="${url}" controls></video>`;
+          listFiles();
+        } catch (err) {
+          document.getElementById(
+            "result"
+          ).innerHTML = `<span style='color:red'>Error: ${err}</span>`;
+        }
+      };
+
+      async function listFiles() {
+        const response = await fetch(`${API_BASE}/outputs`);
+        const data = await response.json();
+        const list = document.getElementById("fileList");
+        list.innerHTML = "";
+        data.files.forEach((f) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<a href="/outputs/${f}" target="_blank">${f}</a>`;
+          list.appendChild(li);
+        });
+      }
+      // Initial file list
+      listFiles();
+    </script>
+    <p style="margin-top: 2em; color: gray">
+      Note: Pose directory must exist on the server. Video links are direct
+      downloads from the server's outputs folder.
+    </p>
+  </body>
+</html>
