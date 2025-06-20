@@ -65,7 +65,8 @@
     <button onclick="listFiles()">Refresh List</button>
     <ul id="fileList"></ul>
     <script>
-      const API_BASE = window.location.origin.replace(":7860", ":8000");
+      const API_BASE = "http://13.203.106.53:8000";
+
       document.getElementById("genForm").onsubmit = async function (e) {
         e.preventDefault();
         const form = e.target;
