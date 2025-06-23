@@ -9,12 +9,14 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 # Import the generate function from app.py
-from app import generate
+from app_acc import generate
+
 
 def save_upload_file(upload_file: UploadFile, destination: str) -> str:
     with open(destination, "wb") as buffer:
         shutil.copyfileobj(upload_file.file, buffer)
     return destination
+
 
 app = FastAPI()
 app.add_middleware(
@@ -25,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+
 
 @app.post("/generate")
 async def generate_api(
@@ -65,14 +68,20 @@ async def generate_api(
             quantization_input,
             seed,
         )
-        return FileResponse(video_output, media_type="video/mp4", filename=os.path.basename(video_output))
+        return FileResponse(
+            video_output,
+            media_type="video/mp4",
+            filename=os.path.basename(video_output),
+        )
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/outputs")
 async def list_outputs_api():
     files = sorted(glob.glob("outputs/*.mp4"), reverse=True)
     return {"files": [os.path.basename(f) for f in files]}
 
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

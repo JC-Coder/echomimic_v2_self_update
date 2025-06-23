@@ -1,119 +1,456 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>EchoMimicV2 API Client</title>
+    <title>EchoMimicV2 - Accelerated Version</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        margin: 2em;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 2em;
+        background: #f7f7f7;
+        color: #333;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 2em;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 2em;
+      }
+      .header h1 {
+        color: #1a73e8;
+        margin: 0;
+      }
+      .header p {
+        color: #666;
+        margin-top: 0.5em;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5em;
+        margin-bottom: 2em;
+      }
+      .form-group {
+        background: #f8f9fa;
+        padding: 1.5em;
+        border-radius: 8px;
+      }
+      .form-group h3 {
+        margin-top: 0;
+        color: #1a73e8;
+        font-size: 1.2em;
       }
       label {
         display: block;
-        margin-top: 1em;
+        margin-bottom: 0.5em;
+        color: #555;
+        font-weight: 500;
       }
-      input,
+      input[type="file"],
+      input[type="text"],
+      input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 1em;
+      }
+      input[type="checkbox"] {
+        margin-right: 8px;
+      }
       button {
-        margin-top: 0.5em;
+        background: #1a73e8;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #1557b0;
+      }
+      .result {
+        margin-top: 2em;
+        text-align: center;
       }
       video {
-        margin-top: 1em;
-        max-width: 480px;
-        display: block;
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .output-list {
+        margin-top: 2em;
+        padding: 1.5em;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+      .output-list h3 {
+        margin-top: 0;
+        color: #1a73e8;
       }
       ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      li:last-child {
+        border-bottom: none;
+      }
+      a {
+        color: #1a73e8;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .error {
+        color: #d32f2f;
+        padding: 1em;
+        background: #fde8e8;
+        border-radius: 4px;
+        margin: 1em 0;
+      }
+      .loading {
+        color: #1a73e8;
+        padding: 1em;
+        background: #e8f0fe;
+        border-radius: 4px;
+        margin: 1em 0;
+      }
+      .examples {
+        background: #fff;
+        padding: 2em;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2em;
+      }
+
+      .example-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5em;
         margin-top: 1em;
+      }
+
+      .example-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1em;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-align: center;
+      }
+
+      .example-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .example-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-bottom: 0.5em;
+      }
+
+      .example-card p {
+        margin: 0;
+        color: #1a73e8;
+        font-weight: 500;
       }
     </style>
   </head>
   <body>
-    <h2>Generate Lip Sync Video (API Client)</h2>
-    <form id="genForm">
-      <label>Image: <input type="file" name="image_input" required /></label>
-      <label>Audio: <input type="file" name="audio_input" required /></label>
-      <label
-        >Pose Dir (server path):
-        <input
-          type="text"
-          name="pose_input"
-          value="assets/halfbody_demo/pose/fight"
-      /></label>
-      <label>Width: <input type="number" name="width" value="768" /></label>
-      <label>Height: <input type="number" name="height" value="768" /></label>
-      <label>Length: <input type="number" name="length" value="120" /></label>
-      <label>Steps: <input type="number" name="steps" value="30" /></label>
-      <label
-        >Sample Rate: <input type="number" name="sample_rate" value="16000"
-      /></label>
-      <label
-        >CFG: <input type="number" step="0.1" name="cfg" value="2.5"
-      /></label>
-      <label>FPS: <input type="number" name="fps" value="24" /></label>
-      <label
-        >Context Frames: <input type="number" name="context_frames" value="12"
-      /></label>
-      <label
-        >Context Overlap: <input type="number" name="context_overlap" value="3"
-      /></label>
-      <label
-        >Quantization: <input type="checkbox" name="quantization_input"
-      /></label>
-      <label>Seed: <input type="number" name="seed" value="-1" /></label>
-      <button type="submit">Generate</button>
-    </form>
-    <div id="result"></div>
-    <h3>All Generated Videos</h3>
-    <button onclick="listFiles()">Refresh List</button>
-    <ul id="fileList"></ul>
+    <div class="container">
+      <div class="header">
+        <h1>EchoMimicV2 - Accelerated Version</h1>
+        <p>Generate striking, simplified, and semi-body human animations</p>
+      </div>
+
+      <div class="examples">
+        <h3>Predefined Examples</h3>
+        <div class="example-grid">
+          <div class="example-card" onclick="loadExample(0)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/man/0003.png"
+              alt="Man Example 1"
+            />
+            <p>Fighting Scene</p>
+          </div>
+          <div class="example-card" onclick="loadExample(1)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/woman/0033.png"
+              alt="Woman Example 1"
+            />
+            <p>Good Scene</p>
+          </div>
+          <div class="example-card" onclick="loadExample(2)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/man/0010.png"
+              alt="Man Example 2"
+            />
+            <p>News Scene</p>
+          </div>
+          <div class="example-card" onclick="loadExample(3)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/man/1168.png"
+              alt="Man Example 3"
+            />
+            <p>No Smoking Scene</p>
+          </div>
+          <div class="example-card" onclick="loadExample(4)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/woman/0057.png"
+              alt="Woman Example 2"
+            />
+            <p>Ultraman Scene</p>
+          </div>
+          <div class="example-card" onclick="loadExample(5)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/man/0001.png"
+              alt="Man Example 4"
+            />
+            <p>EchoMimic Man</p>
+          </div>
+          <div class="example-card" onclick="loadExample(6)">
+            <img
+              src="EMTD_dataset/ref_imgs_by_FLUX/woman/0077.png"
+              alt="Woman Example 3"
+            />
+            <p>EchoMimic Woman</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="genForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <h3>Input Files</h3>
+            <label>Reference Image (PNG):</label>
+            <input type="file" name="image_input" accept="image/png" required />
+
+            <label>Audio File (WAV):</label>
+            <input type="file" name="audio_input" accept="audio/wav" required />
+
+            <label>Pose Directory:</label>
+            <input
+              type="text"
+              name="pose_input"
+              value="assets/halfbody_demo/pose/fight"
+              placeholder="Server path to pose directory"
+            />
+          </div>
+
+          <div class="form-group">
+            <h3>Video Settings</h3>
+            <label>Width:</label>
+            <input type="number" name="width" value="768" min="256" step="64" />
+
+            <label>Height:</label>
+            <input
+              type="number"
+              name="height"
+              value="768"
+              min="256"
+              step="64"
+            />
+
+            <label>Length (frames):</label>
+            <input type="number" name="length" value="120" min="1" />
+
+            <label>FPS:</label>
+            <input type="number" name="fps" value="24" min="1" />
+          </div>
+
+          <div class="form-group">
+            <h3>Generation Parameters</h3>
+            <label>Steps:</label>
+            <input type="number" name="steps" value="30" min="1" />
+
+            <label>Sample Rate:</label>
+            <input type="number" name="sample_rate" value="16000" />
+
+            <label>CFG Scale:</label>
+            <input type="number" step="0.1" name="cfg" value="2.5" min="0" />
+
+            <label>Context Frames:</label>
+            <input type="number" name="context_frames" value="12" min="1" />
+
+            <label>Context Overlap:</label>
+            <input type="number" name="context_overlap" value="3" min="0" />
+
+            <label>Random Seed (-1 for random):</label>
+            <input type="number" name="seed" value="-1" />
+
+            <label>
+              <input type="checkbox" name="quantization_input" />
+              Enable INT8 Quantization
+            </label>
+          </div>
+        </div>
+
+        <div style="text-align: center">
+          <button type="submit">Generate Animation</button>
+        </div>
+      </form>
+
+      <div id="result" class="result"></div>
+
+      <div class="output-list">
+        <h3>Generated Videos</h3>
+        <button onclick="listFiles()">Refresh List</button>
+        <ul id="fileList"></ul>
+      </div>
+    </div>
+
     <script>
-      const API_BASE = "http://13.203.106.53:8000";
+      const API_BASE = "http://localhost:8000"; // Update this to your server address
 
       document.getElementById("genForm").onsubmit = async function (e) {
         e.preventDefault();
         const form = e.target;
         const data = new FormData(form);
-        document.getElementById("result").innerHTML = "Generating...";
+        const resultDiv = document.getElementById("result");
+
+        resultDiv.innerHTML =
+          '<div class="loading">Generating animation... This may take a few minutes.</div>';
+
         try {
           const response = await fetch(`${API_BASE}/generate`, {
             method: "POST",
             body: data,
           });
+
           if (!response.ok) {
             const err = await response.json();
-            document.getElementById(
-              "result"
-            ).innerHTML = `<span style='color:red'>Error: ${err.error}</span>`;
+            resultDiv.innerHTML = `<div class="error">Error: ${err.error}</div>`;
             return;
           }
+
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
-          document.getElementById(
-            "result"
-          ).innerHTML = `<video src="${url}" controls></video>`;
+          resultDiv.innerHTML = `
+            <h3>Generated Animation</h3>
+            <video src="${url}" controls></video>
+          `;
           listFiles();
         } catch (err) {
-          document.getElementById(
-            "result"
-          ).innerHTML = `<span style='color:red'>Error: ${err}</span>`;
+          resultDiv.innerHTML = `<div class="error">Error: ${err}</div>`;
         }
       };
 
       async function listFiles() {
-        const response = await fetch(`${API_BASE}/outputs`);
-        const data = await response.json();
-        const list = document.getElementById("fileList");
-        list.innerHTML = "";
-        data.files.forEach((f) => {
-          const li = document.createElement("li");
-          li.innerHTML = `<a href="/outputs/${f}" target="_blank">${f}</a>`;
-          list.appendChild(li);
-        });
+        try {
+          const response = await fetch(`${API_BASE}/outputs`);
+          const data = await response.json();
+          const list = document.getElementById("fileList");
+          list.innerHTML = data.files.length
+            ? ""
+            : "<p>No generated videos yet</p>";
+
+          data.files.forEach((f) => {
+            const li = document.createElement("li");
+            li.innerHTML = `<a href="${API_BASE}/outputs/${f}" target="_blank">${f}</a>`;
+            list.appendChild(li);
+          });
+        } catch (err) {
+          console.error("Failed to list files:", err);
+        }
       }
+
       // Initial file list
       listFiles();
+
+      // Add this before the existing script
+      const examples = [
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/man/0003.png",
+          audio: "assets/halfbody_demo/audio/chinese/fighting.wav",
+          pose: "assets/halfbody_demo/pose/fight",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/woman/0033.png",
+          audio: "assets/halfbody_demo/audio/chinese/good.wav",
+          pose: "assets/halfbody_demo/pose/good",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/man/0010.png",
+          audio: "assets/halfbody_demo/audio/chinese/news.wav",
+          pose: "assets/halfbody_demo/pose/01",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/man/1168.png",
+          audio: "assets/halfbody_demo/audio/chinese/no_smoking.wav",
+          pose: "assets/halfbody_demo/pose/02",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/woman/0057.png",
+          audio: "assets/halfbody_demo/audio/chinese/ultraman.wav",
+          pose: "assets/halfbody_demo/pose/ultraman",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/man/0001.png",
+          audio: "assets/halfbody_demo/audio/chinese/echomimicv2_man.wav",
+          pose: "assets/halfbody_demo/pose/03",
+        },
+        {
+          image: "EMTD_dataset/ref_imgs_by_FLUX/woman/0077.png",
+          audio: "assets/halfbody_demo/audio/chinese/echomimicv2_woman.wav",
+          pose: "assets/halfbody_demo/pose/04",
+        },
+      ];
+
+      async function loadExample(index) {
+        const example = examples[index];
+
+        // Create a File object from the image URL
+        const imageResponse = await fetch(example.image);
+        const imageBlob = await imageResponse.blob();
+        const imageFile = new File(
+          [imageBlob],
+          example.image.split("/").pop(),
+          { type: "image/png" }
+        );
+
+        // Create a File object from the audio URL
+        const audioResponse = await fetch(example.audio);
+        const audioBlob = await audioResponse.blob();
+        const audioFile = new File(
+          [audioBlob],
+          example.audio.split("/").pop(),
+          { type: "audio/wav" }
+        );
+
+        // Get the file input elements
+        const imageInput = document.querySelector('input[name="image_input"]');
+        const audioInput = document.querySelector('input[name="audio_input"]');
+        const poseInput = document.querySelector('input[name="pose_input"]');
+
+        // Create a new DataTransfer object and add our file
+        const imageDataTransfer = new DataTransfer();
+        imageDataTransfer.items.add(imageFile);
+        imageInput.files = imageDataTransfer.files;
+
+        const audioDataTransfer = new DataTransfer();
+        audioDataTransfer.items.add(audioFile);
+        audioInput.files = audioDataTransfer.files;
+
+        // Set the pose directory
+        poseInput.value = example.pose;
+      }
     </script>
-    <p style="margin-top: 2em; color: gray">
-      Note: Pose directory must exist on the server. Video links are direct
-      downloads from the server's outputs folder.
-    </p>
   </body>
 </html>
